@@ -18,23 +18,14 @@ jobs:
           persist-credentials: false
 
       - name: Validate expected infra skeleton
-        run: |
-          set -euo pipefail
-          test -d deploy
-          test -d environments
-          test -d docker
-          test -d monitoring
-          test -d scripts
-          echo "Repository skeleton is present."
+        run: bash scripts/check-repo-structure.sh
 
-  workflow-placeholder:
+  workflow-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Placeholder workflow checks
-        run: |
-          echo "Infra CI skeleton initialized."
-          echo "Replace this step with workflow lint, deploy dry-run, and config validation as files are added."
+      - name: Lint GitHub Actions workflows
+        uses: rhysd/actionlint@v1

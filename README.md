@@ -57,6 +57,8 @@ This repository currently includes:
 - `.github/workflows/agent-config-check.yml`
 - `.github/workflows/infra-ci.yml`
 - `.github/workflows/opencode-review.yml`
+- `scripts/check-repo-structure.sh`
+- executable workflow validation baseline
 - initial infra directory skeleton
 
 ## Agent Tooling
