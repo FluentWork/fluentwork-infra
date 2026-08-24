@@ -1,0 +1,23 @@
+{
+  "include": [
+    ".github/workflows/**/*.yml",
+    ".github/workflows/**/*.yaml",
+    "deploy/**/*.sh",
+    "scripts/**/*.sh"
+  ],
+  "exclude": [],
+  "rules": [
+    {
+      "path": ".github/workflows/**/*.{yml,yaml}",
+      "rule": "Review CI and automation workflows for least-privilege permissions, action supply-chain safety, secret exposure risk, concurrency and re-run behavior, and whether jobs can mutate repositories or environments more broadly than intended."
+    },
+    {
+      "path": "scripts/**/*.sh",
+      "rule": "Review shell scripts for quoted variables, empty-variable guards before destructive commands, path safety, idempotency, clear failure modes, and avoiding commands that can recursively delete or overwrite unintended targets."
+    },
+    {
+      "path": "deploy/**/*.sh",
+      "rule": "Review deploy scripts for rollback awareness, explicit environment targeting, secret handling, and safeguards that prevent production-impacting actions from running with ambiguous or missing inputs."
+    }
+  ]
+}
