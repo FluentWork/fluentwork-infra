@@ -29,6 +29,8 @@ scripts/
 - manage environment-specific deployment configuration
 - keep release automation and rollback scripts centralized
 - provide shared pipeline building blocks for iOS and backend repos
+- shared agent policy comes from `fluentwork-meta`
+- external helpers such as gstack and Matt Pocock style skills are allowed, but repo rules win on conflicts
 
 ## CI/CD Goals
 
@@ -36,9 +38,29 @@ scripts/
 - deployment validation
 - environment protection rules
 - release traceability
+- agent entry file validation
+- report-only AI review integration for workflow and deploy changes
 
 ## Related Repositories
 
 - `fluentwork-meta`
 - `fluentwork-ios`
 - `fluentwork-backend`
+
+## Current Initialization Status
+
+This repository currently includes:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+- `CODEOWNERS`
+- `.github/workflows/agent-config-check.yml`
+- `.github/workflows/infra-ci.yml`
+- `.github/workflows/opencode-review.yml`
+- initial infra directory skeleton
+
+## Agent Tooling
+
+- `gstack` can be used locally for `/review` and `/setup-deploy`
+- Matt Pocock style skills may be used as helpers under FluentWork shared governance
+- OpenCodeReview is initialized as a GitHub review workflow skeleton and should start in report-only mode
