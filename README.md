@@ -64,5 +64,7 @@ This repository currently includes:
 ## Agent Tooling
 
 - `gstack` can be used locally for `/review` and `/setup-deploy`
+- local OpenCodeReview CLI (`ocr`) can be used for pre-PR review against `.opencodereview/rule.json`
+- after `ocr review`, run `./scripts/ocr-export-review.sh` to save findings under `.opencodereview/reviews/` (see `latest.md`)
 - Matt Pocock style skills may be used as helpers under FluentWork shared governance
 - OpenCodeReview is initialized as a GitHub review workflow skeleton and should start in report-only mode
