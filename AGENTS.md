@@ -29,7 +29,7 @@ Shared topics:
 1. Read current infra and governance docs before editing.
 2. Keep changes scoped to the active workflow or environment concern.
 3. Do not bypass review, CI, or owner approval requirements.
-4. OpenCodeReview `high` / `critical` findings must be fixed before merge; absence of `high`/`critical` allows merge (`medium`/`low` may remain as follow-ups).
+4. Before each commit, local OpenCodeReview must pass: fix any `high` / `critical` findings (see `scripts/ocr-local-review.sh`); `medium` / `low` may remain as follow-ups.
 5. Do not perform destructive git operations without explicit approval.
 6. Surface permission, deploy, and rollback implications clearly.
 
@@ -40,6 +40,13 @@ Shared topics:
 3. Rollback scripts and release automation
 4. Shared reusable workflow definitions
 
+## Local Review Gate
+
+1. One-time per clone: `./scripts/setup-git-hooks.sh` (sets `core.hooksPath=.githooks`).
+2. Pre-commit runs `scripts/ocr-local-review.sh` (OCR CLI + `ocr-fail-on-high.sh`).
+3. Emergency bypass only: `SKIP_OCR=1`, and justify in the commit/PR body.
+4. Optional archive: `./scripts/ocr-export-review.sh` after a review.
+
 ## CI Boundary
 
-CI validates workflow syntax, config, and deploy checks. CI does not run a full interactive skills runtime.
+CI validates workflow syntax, config, and deploy checks. CI does not run OpenCodeReview or a full interactive skills runtime.

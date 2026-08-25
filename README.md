@@ -39,7 +39,7 @@ scripts/
 - environment protection rules
 - release traceability
 - agent entry file validation
-- OpenCodeReview merge gate for workflow/deploy changes: `high`/`critical` block merge; `medium`/`low` do not
+- local OpenCodeReview pre-commit gate for workflow/deploy changes: `high`/`critical` block commit; `medium`/`low` do not
 
 ## Related Repositories
 
@@ -56,15 +56,16 @@ This repository currently includes:
 - `CODEOWNERS`
 - `.github/workflows/agent-config-check.yml`
 - `.github/workflows/infra-ci.yml`
-- `.github/workflows/opencode-review.yml`
+- `.githooks/pre-commit` + `scripts/setup-git-hooks.sh` (local OCR gate)
 - `scripts/check-repo-structure.sh`
 - executable workflow validation baseline
 - initial infra directory skeleton
 
 ## Agent Tooling
 
-- `gstack` can be used locally for `/review` and `/setup-deploy`
-- local OpenCodeReview CLI (`ocr`) can be used for pre-PR review against `.opencodereview/rule.json`
-- after `ocr review`, run `./scripts/ocr-export-review.sh` to save findings under `.opencodereview/reviews/` (see `latest.md`)
+- `gstack` can be used locally for deeper `/review` and `/setup-deploy`
+- OpenCodeReview CLI (`ocr`) is the **commit gate**: enable hooks once with `./scripts/setup-git-hooks.sh`
+- pre-commit runs `./scripts/ocr-local-review.sh` (uses `.opencodereview/rule.json` + `ocr-fail-on-high.sh`)
+- after a review, optionally run `./scripts/ocr-export-review.sh` to save findings under `.opencodereview/reviews/` (see `latest.md`)
 - Matt Pocock style skills may be used as helpers under FluentWork shared governance
-- OpenCodeReview on PRs: `scripts/ocr-fail-on-high.sh` fails the job when any `high`/`critical` finding exists (`medium`/`low` allowed); this script is the cross-repo canonical gate
+- GitHub CI no longer runs OpenCodeReview; keep review local before commit; `scripts/ocr-fail-on-high.sh` remains the cross-repo canonical severity gate
