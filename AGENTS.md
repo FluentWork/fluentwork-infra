@@ -29,8 +29,9 @@ Shared topics:
 1. Read current infra and governance docs before editing.
 2. Keep changes scoped to the active workflow or environment concern.
 3. Do not bypass review, CI, or owner approval requirements.
-4. Do not perform destructive git operations without explicit approval.
-5. Surface permission, deploy, and rollback implications clearly.
+4. OpenCodeReview `high` / `critical` findings must be fixed before merge; absence of `high`/`critical` allows merge (`medium`/`low` may remain as follow-ups).
+5. Do not perform destructive git operations without explicit approval.
+6. Surface permission, deploy, and rollback implications clearly.
 
 ## High-Risk Paths
 
