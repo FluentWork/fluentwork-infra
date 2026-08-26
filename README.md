@@ -39,7 +39,7 @@ scripts/
 - environment protection rules
 - release traceability
 - agent entry file validation
-- pre-merge review via **gstack `/review`** (OpenCodeReview pre-commit gate paused)
+- pre-commit gstack `/review` attestation (`GSTACK_REVIEWED=1`); CI does not run code review
 
 ## Related Repositories
 
@@ -56,16 +56,16 @@ This repository currently includes:
 - `CODEOWNERS`
 - `.github/workflows/agent-config-check.yml`
 - `.github/workflows/infra-ci.yml`
-- `.githooks/pre-commit` + `scripts/setup-git-hooks.sh` (local OCR gate)
+- `.githooks/pre-commit` + `scripts/setup-git-hooks.sh` + `scripts/gstack-review-gate.sh`
 - `scripts/check-repo-structure.sh`
 - executable workflow validation baseline
 - initial infra directory skeleton
 
 ## Agent Tooling
 
+- **gstack `/review`** before commit, then `GSTACK_REVIEWED=1 git commit ...`
+- emergency bypass: `SKIP_GSTACK_REVIEW=1` (justify in commit/PR)
 - `gstack` can be used locally for deeper `/review` and `/setup-deploy`
-- **gstack `/review`** is the primary pre-merge review path
-- OpenCodeReview pre-commit gate is **paused**; optional `FORCE_OCR=1 ./scripts/ocr-local-review.sh`
-- after a review, optionally run `./scripts/ocr-export-review.sh` to save findings under `.opencodereview/reviews/` (see `latest.md`)
+- OCR scripts optional/manual only; not part of default pre-commit
 - Matt Pocock style skills may be used as helpers under FluentWork shared governance
-- GitHub CI does not run OpenCodeReview; use gstack `/review` before merge; `scripts/ocr-fail-on-high.sh` remains the cross-repo canonical severity gate
+- GitHub CI does not run code review
