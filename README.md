@@ -39,7 +39,7 @@ scripts/
 - environment protection rules
 - release traceability
 - agent entry file validation
-- local OpenCodeReview pre-commit gate for workflow/deploy changes: `high`/`critical` block commit; `medium`/`low` do not
+- pre-merge review via **gstack `/review`** (OpenCodeReview pre-commit gate paused)
 
 ## Related Repositories
 
@@ -64,8 +64,8 @@ This repository currently includes:
 ## Agent Tooling
 
 - `gstack` can be used locally for deeper `/review` and `/setup-deploy`
-- OpenCodeReview CLI (`ocr`) is the **commit gate**: enable hooks once with `./scripts/setup-git-hooks.sh`
-- pre-commit runs `./scripts/ocr-local-review.sh` (uses `.opencodereview/rule.json` + `ocr-fail-on-high.sh`)
+- **gstack `/review`** is the primary pre-merge review path
+- OpenCodeReview pre-commit gate is **paused**; optional `FORCE_OCR=1 ./scripts/ocr-local-review.sh`
 - after a review, optionally run `./scripts/ocr-export-review.sh` to save findings under `.opencodereview/reviews/` (see `latest.md`)
 - Matt Pocock style skills may be used as helpers under FluentWork shared governance
-- GitHub CI no longer runs OpenCodeReview; keep review local before commit; `scripts/ocr-fail-on-high.sh` remains the cross-repo canonical severity gate
+- GitHub CI does not run OpenCodeReview; use gstack `/review` before merge; `scripts/ocr-fail-on-high.sh` remains the cross-repo canonical severity gate
