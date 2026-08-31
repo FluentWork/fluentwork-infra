@@ -10,6 +10,7 @@ This repository will contain:
 - deployment scripts and environment definitions
 - Docker and runtime packaging assets
 - observability and alerting configuration
+- shared schema documents and contract artifacts
 - environment bootstrap and release automation
 
 ## Planned Structure
@@ -20,6 +21,8 @@ deploy/
 environments/
 docker/
 monitoring/
+docs/
+schemas/
 scripts/
 ```
 
@@ -29,6 +32,7 @@ scripts/
 - manage environment-specific deployment configuration
 - keep release automation and rollback scripts centralized
 - provide shared pipeline building blocks for iOS and backend repos
+- own cross-repo observability and event schema source-of-truth documents
 - shared agent policy comes from `fluentwork-meta`
 - external helpers such as gstack and Matt Pocock style skills are allowed, but repo rules win on conflicts
 
@@ -60,6 +64,9 @@ This repository currently includes:
 - `scripts/check-repo-structure.sh`
 - executable workflow validation baseline
 - initial infra directory skeleton
+- canonical shared schema documents under `docs/observability/`
+- canonical transport and event schemas under `schemas/`
+- shared-schema implementation design doc under `docs/observability/01_共享Schema实现设计.md`
 
 ## Agent Tooling
 
