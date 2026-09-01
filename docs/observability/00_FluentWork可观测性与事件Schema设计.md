@@ -109,6 +109,52 @@
 - `turn_id`
 - `transport_type`
 
+### `phrase_block_id`：badge dedupe 跨端关联键
+
+`phrase_block_id` 是 `feedback.badge` 控制帧的语料库 ID（定义见 `schemas/transport/wss-control-frames-v1.json` 的 `$defs.feedbackBadge.properties.phrase_block_id`）。backend BadgeEmitter 用它做 `session|turn|phrase_block` 三段 dedupe key，iOS `BadgeFeedback` 层用它做 (badge, turn_id, phrase_block_id, time-window) 的本地 dedupe 镜像。
+
+涉及 badge / hit-detection 的 domain / analytics 事件必须把 `phrase_block_id` 一并带上，否则无法跨 iOS ↔ backend ↔ worker 做命中归因。
+
+`phrase_block_id` 在 event schema 中应作为 `eventBase` 的可选扩展字段使用，约束：
+
+- 类型：`string`，非空
+- 来源：`feedback.badge` 帧的 `phrase_block_id`
+- 缺失语义：badge emit 端上游 phrase block 为空时 `NewFeedbackBadge` 直接跳过 emit，因此携带 `phrase_block_id` 的事件只能由真实命中产生；分析侧遇到缺失时按"非命中"处理，不补默认值
+
+事件级示例（`feedback_badge_emitted`）：
+
+```json
+{
+  "event_name": "feedback_badge_emitted",
+  "event_version": 1,
+  "event_time": "2026-09-01T15:57:29.346Z",
+  "source": "voice_gateway",
+  "session_id": "s-1234",
+  "turn_id": "turn-1",
+  "phrase_block_id": "block-节奏稳定-v1",
+  "tier": "highlight",
+  "elapsed_ms": 0
+}
+```
+
+iOS 端镜像同一字段（同 turn、同 phrase_block，5s 窗口内只落 1 条 `state.badgeFeedback.entries`）：
+
+```json
+{
+  "event_name": "ios.badge_feedback_dedupe_mirror",
+  "event_version": 1,
+  "event_time": "2026-09-01T15:57:29.347Z",
+  "source": "ios",
+  "session_id": "s-1234",
+  "turn_id": "turn-1",
+  "phrase_block_id": "block-节奏稳定-v1",
+  "tier": "highlight",
+  "phase": "asr"
+}
+```
+
+跨端 join 路径：`session_id` + `turn_id` + `phrase_block_id` 三键等值 join，可还原一次完整命中生命周期（emit → dedupe → display）。
+
 ## 当前已冻结的一项 transport 修正
 
 为消除 iOS 端对回合结束的本地时间推断，WSS transport schema 补充显式控制帧：
