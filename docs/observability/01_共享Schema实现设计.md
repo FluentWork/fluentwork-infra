@@ -78,16 +78,18 @@ canonical source:
 1. `docs/observability/00_FluentWork可观测性与事件Schema设计.md`
 2. `docs/observability/01_共享Schema实现设计.md`
 3. `schemas/transport/wss-control-frames-v1.json`
-4. `schemas/events/speech-observability-events-v1.json`
+4. `schemas/transport/wss-control-frames-v2.json`
+5. `schemas/events/speech-observability-events-v1.json`
 
 ### `fluentwork-backend`
 
 mirror consumer:
 
 1. `schemas/transport/wss-control-frames-v1.json`
-2. `schemas/events/speech-observability-events-v1.json`
-3. `schemas/embed.go`
-4. `scripts/sync-shared-schemas.sh`
+2. `schemas/transport/wss-control-frames-v2.json`
+3. `schemas/events/speech-observability-events-v1.json`
+4. `schemas/embed.go`
+5. `scripts/sync-shared-schemas.sh`
 
 ### `fluentwork-ios`
 
