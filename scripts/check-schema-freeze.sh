@@ -14,7 +14,7 @@ else
 fi
 
 FROZEN="
-schemas/transport/wss-binary-audio-frames-v1.json 5f8dd2c2c83b8e645eb5f41dfa61f6349c304361c54429631ad37e640617abff
+schemas/transport/wss-binary-audio-frames-v1.json 2292008868911431587abfc9e12da13da34fa383f8b439fce9389d3cb54c87cb
 "
 
 status=0
