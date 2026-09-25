@@ -111,7 +111,7 @@
 
 ### `phrase_block_id`：badge dedupe 跨端关联键
 
-`phrase_block_id` 是 `feedback.badge` 控制帧的语料库 ID（定义见 `schemas/transport/wss-control-frames-v1.json` 的 `$defs.feedbackBadge.properties.phrase_block_id`）。backend BadgeEmitter 用它做 `session|turn|phrase_block` 三段 dedupe key，iOS `BadgeFeedback` 层用它做 (badge, turn_id, phrase_block_id, time-window) 的本地 dedupe 镜像。
+`phrase_block_id` 是 `feedback.badge` 控制帧的语料库 ID（定义见 `schemas/transport/wss-control-frames-v2.json` 的 `$defs.feedbackBadge.properties.phrase_block_id`）。backend BadgeEmitter 用它做 `session|turn|phrase_block` 三段 dedupe key，iOS `BadgeFeedback` 层用它做 (badge, turn_id, phrase_block_id, time-window) 的本地 dedupe 镜像。
 
 涉及 badge / hit-detection 的 domain / analytics 事件必须把 `phrase_block_id` 一并带上，否则无法跨 iOS ↔ backend ↔ worker 做命中归因。
 

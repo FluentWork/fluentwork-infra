@@ -77,19 +77,18 @@ canonical source:
 
 1. `docs/observability/00_FluentWork可观测性与事件Schema设计.md`
 2. `docs/observability/01_共享Schema实现设计.md`
-3. `schemas/transport/wss-control-frames-v1.json`
-4. `schemas/transport/wss-control-frames-v2.json`
+3. `schemas/transport/wss-control-frames-v2.json`
+4. `schemas/transport/wss-binary-audio-frames-v1.json`
 5. `schemas/events/speech-observability-events-v1.json`
 
 ### `fluentwork-backend`
 
 mirror consumer:
 
-1. `schemas/transport/wss-control-frames-v1.json`
-2. `schemas/transport/wss-control-frames-v2.json`
-3. `schemas/events/speech-observability-events-v1.json`
-4. `schemas/embed.go`
-5. `scripts/sync-shared-schemas.sh`
+1. `schemas/transport/wss-control-frames-v2.json`
+2. `schemas/events/speech-observability-events-v1.json`
+3. `schemas/embed.go`
+4. `scripts/sync-shared-schemas.sh`
 
 ### `fluentwork-ios`
 
@@ -137,10 +136,12 @@ mirror consumer:
 处理步骤：
 
 1. 先改 `fluentwork-infra/schemas/transport/*.json`
-2. 更新 backend mirror 与 iOS mirror
-3. 更新 backend 编解码和 handler 测试
-4. 更新 iOS `WSControlFrame` 编解码与状态机接线测试
-5. 确认不存在仅靠一端本地推断的残留逻辑
+2. 若改的是冻结产物（见「冻结产物」一节），在同一个提交里刷新
+   `scripts/check-schema-freeze.sh` 中的摘要，并在提交正文说明原因
+3. 更新 backend mirror 与 iOS mirror
+4. 更新 backend 编解码和 handler 测试
+5. 更新 iOS `WSControlFrame` 编解码与状态机接线测试
+6. 确认不存在仅靠一端本地推断的残留逻辑
 
 ### C. 新增 schema 文档
 
@@ -180,6 +181,30 @@ mirror consumer:
 1. 新增可选字段
 2. 新增向后兼容枚举值
 3. 仅补文档、不改 machine-readable contract
+
+## 冻结产物（sha256 pin）
+
+二进制音频帧布局没有 JSON Schema 可用——帧本身是裸字节，不是 JSON。它的 canonical
+形态是 `schemas/transport/wss-binary-audio-frames-v1.json`：一份描述字节偏移、不变量与
+选择规则的产物。
+
+这份产物用 sha256 冻结，校验点是 `scripts/check-schema-freeze.sh`（CI job
+`schema-freeze-check`）。冻结的含义是：**改动会红，直到同一个提交里刷新摘要**。
+这样做的理由不是禁止改动，而是让改动无法静默发生——一份被声明为 source of truth
+的文件，如果被改了却留不下痕迹，它的声明就是空的。
+
+刷新摘要时必须说清为什么改，写在提交正文里。摘要是判据，不是形式。
+
+需要注意两点：
+
+1. **冻结之前先问「这个形态有人跑过吗」。** v1 控制帧契约被 sha256 钉死之后才发现它带着两个
+   从未运行过的字段（`ai.audio.chunk`、`interrupt.max_seq`），而冻结让它连删都删不掉——
+   最后只能整份删除才了结。教训是「只冻结已经执行过的形态」。
+   `wss-binary-audio-frames-v1.json` 的 h8 布局目前**没有任何一端实现**，
+   该文件用 `status` 字段显式标注了这一点；实现落地后必须重新核对并刷新摘要，
+   不能把当时的猜测当成已验证的契约。
+2. **这份产物目前没有 mirror。** backend / iOS 的 `sync-shared-schemas.sh` 都还没有
+   复制它，两侧的实现目前只与它「按实现对齐」，不按产物对齐。这是已知缺口，不是已完成状态。
 
 ## 验收与门禁
 

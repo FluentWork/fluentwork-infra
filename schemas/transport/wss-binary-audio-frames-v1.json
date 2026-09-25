@@ -1,0 +1,192 @@
+{
+  "artifact": "fluentwork-wss-binary-audio-frames",
+  "artifact_version": 1,
+  "title": "FluentWork WSS binary audio frames",
+  "frozen": true,
+  "owner": "fluentwork-infra",
+  "status": "canonical",
+
+  "description": "Byte layout of the WebSocket binary messages on the voice-gateway <-> client socket. The control frames that sit next to this file are JSON and therefore have a JSON Schema; the audio frames are raw bytes and have none. This file is the source of truth for them, and it is frozen by sha256 (see scripts/check-schema-freeze.sh) so that a change to it is deliberate rather than silent.",
+
+  "why_this_file_exists": {
+    "problem": "Before this file the layout existed only as prose in two implementation comments, plus a $defs entry that nothing referenced. Nothing could go red when the two implementations diverged.",
+    "measured_evidence": [
+      "fluentwork-backend internal/voiceproto/frames.go — AITTSAudio.Encode writes a 4-byte big-endian seq followed by the payload",
+      "fluentwork-ios Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift — headerByteCount = 4, same layout",
+      "fluentwork-infra schemas/transport/wss-control-frames-v2.json — aiTTSAudio is defined but deliberately absent from oneOf, so the v1/v2 version strategy does not cover this layout"
+    ],
+    "why_now": "Stage 3 adds turn_ref to the downlink header. That turns 'two implementation points' into 'two layouts x two repositories = four'. The source of truth lands first so the change has something to be checked against."
+  },
+
+  "conventions": {
+    "websocket_message_type": "binary",
+    "byte_order": "big-endian",
+    "uint32_bytes": 4,
+    "text_frames_are_out_of_scope": "JSON control frames are described by wss-control-frames-v2.json"
+  },
+
+  "messages": {
+    "downlink_audio": {
+      "direction": "gateway -> client",
+      "ws_message_type": "binary",
+      "active_layout_is_selected_by": "layout_selection",
+      "layouts": ["h4", "h8"]
+    },
+    "uplink_audio": {
+      "direction": "client -> gateway",
+      "ws_message_type": "binary",
+      "layouts": ["uplink"]
+    }
+  },
+
+  "layouts": {
+    "h4": {
+      "status": "in production",
+      "description": "Current downlink layout. The frame carries no turn attribution.",
+      "header_bytes": 4,
+      "min_total_bytes": 5,
+      "segments": [
+        { "field": "seq", "offset": 0, "size": 4 },
+        { "field": "payload", "offset": 4, "size": "remainder", "min_size": 1 }
+      ]
+    },
+    "h8": {
+      "status": "target (Stage 3) — not implemented by either side yet",
+      "description": "Downlink layout used once the gateway sets turn_ref on ai.tts.start.",
+      "header_bytes": 8,
+      "min_total_bytes": 9,
+      "segments": [
+        { "field": "seq", "offset": 0, "size": 4 },
+        { "field": "turn_ref", "offset": 4, "size": 4 },
+        { "field": "payload", "offset": 8, "size": "remainder", "min_size": 1 }
+      ]
+    },
+    "uplink": {
+      "status": "in production",
+      "description": "Client audio carries no header at all: the whole WebSocket message is the payload.",
+      "header_bytes": 0,
+      "min_total_bytes": 1,
+      "segments": [
+        { "field": "payload", "offset": 0, "size": "whole_message", "min_size": 1 }
+      ]
+    }
+  },
+
+  "layout_selection": {
+    "applies_to": "downlink_audio",
+    "signal": {
+      "channel": "text (JSON control frame)",
+      "frame_type": "ai.tts.start",
+      "field": "turn_ref"
+    },
+    "rule": [
+      { "when": "the most recent ai.tts.start on this socket carries turn_ref", "layout": "h8" },
+      { "when": "the most recent ai.tts.start on this socket does not carry turn_ref", "layout": "h4" }
+    ],
+    "default_before_any_ai_tts_start": "h4",
+    "scope": "Until the next ai.tts.start on the same socket.",
+    "why_the_switch_is_a_field_and_not_a_version": "A layout switch carried on an existing control frame is what makes a rollback possible without reviving a handshake: the gateway stops setting turn_ref and the client falls back to h4 on its own. A version number would require both ends to agree out of band, which is lockstep, and lockstep has no rollback."
+  },
+
+  "fields": {
+    "seq": {
+      "type": "uint32",
+      "byte_order": "big-endian",
+      "allocated_by": "gateway",
+      "numbering_domain": "session — the whole WebSocket, not a turn and not a provider connection",
+      "monotonic": "strictly increasing for as long as the socket is open",
+      "first_value": 1,
+      "zero_means": "unset; the gateway never sends 0, which is reserved because the client's codec uses it to mean unset",
+      "purpose": "identity for the client's barge-in gate, which drops every frame at or below interrupt.max_seq",
+      "implementation_note": "One allocator per socket (backend internal/voicegateway/seq_allocator.go). It is handed to a provider at Open rather than owned by one, so a transparent provider reopen cannot restart the numbering behind a watermark already in the hundreds."
+    },
+    "turn_ref": {
+      "type": "uint32",
+      "byte_order": "big-endian",
+      "allocated_by": "gateway",
+      "numbering_domain": "session — same domain as seq, but a separate allocator",
+      "monotonic": "strictly increasing for as long as the socket is open",
+      "first_value": 1,
+      "zero_means": "unset; the gateway never sends 0",
+      "purpose": "attributes an audio frame to the turn that produced it, so a client can drop a superseded turn's frames after a barge-in instead of relying on its own guess at which turn is current",
+      "why_not_the_seq_allocator": "seq counts frames and turn_ref counts turns. Sharing one allocator would make seq skip numbers, and seq is the basis of the barge-in watermark.",
+      "presence": "h8 only. In h4 there is no turn_ref field on the wire at all."
+    },
+    "payload": {
+      "type": "bytes",
+      "min_size": 1,
+      "downlink_codec": "declared by the codec field of the ai.tts.start that selected the layout",
+      "uplink_codec": "declared out of band by gateway config VOICE_GATEWAY_CLIENT_AUDIO_FORMAT (opus-framed | pcm-s16le); the client does not negotiate it on the wire",
+      "measured_production_value": "on the volc-duplex provider path the gateway emits codec 'pcm' at sample_rate 16000, and the client's wired decoder is RawPCM16FrameDecoder, which returns the payload unchanged"
+    }
+  },
+
+  "invariants": [
+    { "id": "h4.length", "check": "len(message) >= 5", "statement": "A downlink h4 message is at least 5 bytes." },
+    { "id": "h4.seq", "check": "seq == be_uint32(message[0:4])", "statement": "Bytes 0..4 are seq as a big-endian uint32." },
+    { "id": "h4.payload", "check": "payload == message[4:] and len(payload) >= 1", "statement": "Bytes 4.. are the payload, and it is non-empty." },
+    { "id": "h8.length", "check": "len(message) >= 9", "statement": "A downlink h8 message is at least 9 bytes." },
+    { "id": "h8.seq", "check": "seq == be_uint32(message[0:4])", "statement": "Bytes 0..4 are seq as a big-endian uint32." },
+    { "id": "h8.turn_ref", "check": "turn_ref == be_uint32(message[4:8])", "statement": "Bytes 4..8 are turn_ref as a big-endian uint32." },
+    { "id": "h8.payload", "check": "payload == message[8:] and len(payload) >= 1", "statement": "Bytes 8.. are the payload, and it is non-empty." },
+    { "id": "uplink.no_header", "check": "payload == message and len(payload) >= 1", "statement": "An uplink message has no header: the whole message is the payload." },
+    { "id": "seq.monotonic", "check": "for downlink messages i < j on one socket: seq_i < seq_j", "statement": "seq strictly increases within one socket and never repeats." },
+    { "id": "turn_ref.monotonic", "check": "for h8 messages i < j on one socket: turn_ref_i < turn_ref_j", "statement": "turn_ref strictly increases within one socket and never repeats." },
+    {
+      "id": "no_layout_inference",
+      "check": "neither side reads the layout from the message length or from the payload's first bytes",
+      "statement": "The layout is whatever layout_selection says, and nothing else.",
+      "why": "A length heuristic would misread a short h8 frame as h4 and shift the payload by four bytes. That is audible as one click per frame, not as silence — which makes it the harder failure to notice."
+    }
+  ],
+
+  "observed_conventions": {
+    "uplink_chunk_bytes": {
+      "value": 640,
+      "meaning": "20 ms of 16 kHz mono PCM16 (320 samples). The client sends one WebSocket binary message per chunk.",
+      "status": "convention, not enforced by this layout",
+      "drift_note": "Two constants hold this value: backend internal/voicegateway/uplink_constants.go UplinkChunkBytes and internal/voiceduplex/volc_duplex.go uplinkChunkBytes. Equal today; changing one does not redden the other."
+    }
+  },
+
+  "known_divergences": [
+    {
+      "id": "payload-codec-prose-says-opus",
+      "status": "open",
+      "summary": "Three places still describe the downlink payload as Opus; a fourth — the description of the retired wss-control-frames-v1.json — went with that file. The implementation that actually runs treats the payload as raw PCM16, and the gateway declares codec 'pcm'.",
+      "claims_saying_opus": [
+        "fluentwork-ios Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift:29 — 'Binary layout: UInt32 big-endian sequence + Opus payload bytes.'",
+        "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — VolcengineOpusFrameDecoder doc: 'iOS never receives Opus data in production'",
+        "fluentwork-meta docs/30_技术方案/30_FluentWork技术方案设计文档.md:72 — '音频帧：Opus 编码，20ms 帧'"
+      ],
+      "evidence_saying_pcm": [
+        "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — the wired decoder is RawPCM16FrameDecoder, whose decode() returns the payload unchanged and only rejects an odd byte count",
+        "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — VolcengineOpusFrameDecoder.decode throws notAvailable and is not bound",
+        "fluentwork-backend internal/voicegateway/provider_volc_duplex.go — ai.tts.start is emitted with codec 'pcm' and sample_rate 16000"
+      ],
+      "consequence": "The codec is not named anywhere on the wire except ai.tts.start.codec, so nothing goes red. A reader following the prose would build an Opus decoder for data that is already PCM16.",
+      "resolution": "Not decided here. This artifact records the measured value and stays codec-agnostic by design; the three prose claims are for their own repositories to correct or justify."
+    },
+    {
+      "id": "no-versioning-covers-this-layout",
+      "status": "open",
+      "summary": "wss-control-frames-v2.json defines aiTTSAudio but deliberately omits it from oneOf, so the v1/v2 version strategy never applied to the binary layout. Before this file, no artifact owned it.",
+      "resolution": "This file owns it. Layout changes are made here, and the digest in scripts/check-schema-freeze.sh is refreshed deliberately — never to smuggle a field in."
+    }
+  ],
+
+  "consumers": [
+    {
+      "repo": "fluentwork-backend",
+      "implementation": "internal/voiceproto/frames.go — AITTSAudio.Encode / DecodeAITTSAudio (h4 only; h8 not implemented)",
+      "mirror_path": "schemas/transport/wss-binary-audio-frames-v1.json",
+      "mirror_status": "not wired yet — scripts/sync-shared-schemas.sh does not copy this file"
+    },
+    {
+      "repo": "fluentwork-ios",
+      "implementation": "Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift (h4 only; h8 not implemented)",
+      "mirror_path": "Shared/FluentWorkCore/Resources/Schemas/wss-binary-audio-frames-v1.json",
+      "mirror_status": "not wired yet — Scripts/sync-shared-schemas.sh does not copy this file"
+    }
+  ]
+}

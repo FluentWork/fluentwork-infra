@@ -20,6 +20,16 @@ jobs:
       - name: Validate expected infra skeleton
         run: bash scripts/check-repo-structure.sh
 
+  schema-freeze-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify frozen schema digests
+        run: bash scripts/check-schema-freeze.sh
+
   workflow-lint:
     runs-on: ubuntu-latest
     steps:
