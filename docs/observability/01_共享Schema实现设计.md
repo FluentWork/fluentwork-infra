@@ -200,9 +200,11 @@ mirror consumer:
 1. **冻结之前先问「这个形态有人跑过吗」。** v1 控制帧契约被 sha256 钉死之后才发现它带着两个
    从未运行过的字段（`ai.audio.chunk`、`interrupt.max_seq`），而冻结让它连删都删不掉——
    最后只能整份删除才了结。教训是「只冻结已经执行过的形态」。
-   `wss-binary-audio-frames-v1.json` 的 h8 布局目前**没有任何一端实现**，
-   该文件用 `status` 字段显式标注了这一点；实现落地后必须重新核对并刷新摘要，
-   不能把当时的猜测当成已验证的契约。
+   `wss-binary-audio-frames-v1.json` 的 h8 布局在冻结时**没有任何一端实现**，该文件用
+   `status` 字段显式标注了那一点。**2026-09-26 两侧实现都已落地**（backend `662c732`、
+   iOS `ab5f44e`），`status` 与两个 consumer 的 `implementation` 已随之刷新，摘要在同一
+   提交里更新。**但 h8 尚未在真机上端到端验证过** —— 刷新后的 `status` 保留了这个区分，
+   不要把它读成「已验证」。
 2. **这份产物目前没有 mirror。** backend / iOS 的 `sync-shared-schemas.sh` 都还没有
    复制它，两侧的实现目前只与它「按实现对齐」，不按产物对齐。这是已知缺口，不是已完成状态。
 

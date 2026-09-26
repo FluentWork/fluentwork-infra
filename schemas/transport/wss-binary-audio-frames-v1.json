@@ -51,7 +51,7 @@
       ]
     },
     "h8": {
-      "status": "target (Stage 3) — not implemented by either side yet",
+      "status": "implemented by both sides; not yet verified end-to-end on a device",
       "description": "Downlink layout used once the gateway sets turn_ref on ai.tts.start.",
       "header_bytes": 8,
       "min_total_bytes": 9,
@@ -155,10 +155,11 @@
       "status": "open",
       "summary": "Three places still describe the downlink payload as Opus; a fourth — the description of the retired wss-control-frames-v1.json — went with that file. The implementation that actually runs treats the payload as raw PCM16, and the gateway declares codec 'pcm'.",
       "claims_saying_opus": [
-        "fluentwork-ios Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift:29 — 'Binary layout: UInt32 big-endian sequence + Opus payload bytes.'",
+        "fluentwork-ios Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift:5-6 — 'The payload is whatever the active ai.tts.start codec says it is — Opus in the gateway's current shape, already-PCM16 under RawPCM16FrameDecoder.'",
         "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — VolcengineOpusFrameDecoder doc: 'iOS never receives Opus data in production'",
         "fluentwork-meta docs/30_技术方案/30_FluentWork技术方案设计文档.md:72 — '音频帧：Opus 编码，20ms 帧'"
       ],
+      "claims_citation_note": "Citations refreshed 2026-09-26. The iOS entry used to cite the `Binary layout: ... + Opus payload bytes` comment, which Stage 3 rewrote to describe h4 and h8 instead, so that comment is no longer one of these claims; the surviving iOS claim is the one cited now. Line numbers here drift — the quoted text is the identity.",
       "evidence_saying_pcm": [
         "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — the wired decoder is RawPCM16FrameDecoder, whose decode() returns the payload unchanged and only rejects an odd byte count",
         "fluentwork-ios Shared/FluentWorkCore/Dependencies/AppDependencies.swift — VolcengineOpusFrameDecoder.decode throws notAvailable and is not bound",
@@ -178,13 +179,13 @@
   "consumers": [
     {
       "repo": "fluentwork-backend",
-      "implementation": "internal/voiceproto/frames.go — AITTSAudio.Encode / DecodeAITTSAudio (h4 only; h8 not implemented)",
+      "implementation": "internal/voiceproto/frames.go — AITTSAudio.Encode / DecodeAITTSAudio, with the layout decided in one place by AudioFrameLayoutFor (h4 and h8)",
       "mirror_path": "schemas/transport/wss-binary-audio-frames-v1.json",
       "mirror_status": "not wired yet — scripts/sync-shared-schemas.sh does not copy this file"
     },
     {
       "repo": "fluentwork-ios",
-      "implementation": "Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift (h4 only; h8 not implemented)",
+      "implementation": "Shared/FluentWorkNetworking/Socket/WSAudioFrameCodec.swift, with the per-socket layout held by URLSessionSocketTransport (h4 and h8)",
       "mirror_path": "Shared/FluentWorkCore/Resources/Schemas/wss-binary-audio-frames-v1.json",
       "mirror_status": "not wired yet — Scripts/sync-shared-schemas.sh does not copy this file"
     }
